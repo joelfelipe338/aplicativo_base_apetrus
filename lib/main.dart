@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mdi/mdi.dart';
+//Adiciona o arquivo que trabalha com as solicitações do bot
+import 'ia_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,6 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
       Container(color: Colors.yellowAccent,),
       Container(color: Colors.pink,),
       Container(color: Colors.red,),
+      TelaIA(),
     ];
 
     return Scaffold(
@@ -58,6 +61,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _floatingActionButtonWidget(){
+    // Esconde o FloatingActionButton na tela de chat AI
+    if (_homePage == 6) {
+      return null;
+    }
     return FloatingActionButton(
       onPressed: () {
 
@@ -318,6 +325,34 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _homePage = 6;
+                });
+              },
+              child: Padding(
+                padding: EdgeInsets.all(5.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.smart_toy,
+                      color: _homePage == 6 ? Colors.orange : Colors.white,
+                    ),
+                    Text(
+                      "IA",
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 10.0,
+                        color: _homePage == 6 ? Colors.orange : Colors.white,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       )),
@@ -325,4 +360,86 @@ class _MyHomePageState extends State<MyHomePage> {
     ];
   }
 
+}
+
+//classe para a tela de chat de IA
+class TelaIA extends StatefulWidget {
+  @override
+  _TelaIAState createState() => _TelaIAState();
+}
+
+class _TelaIAState extends State<TelaIA> {
+  List<ChatMessage> messages = [];
+  TextEditingController messageController = TextEditingController();
+
+  void sendMessage(String text) async {
+
+    // Primeiro, adiciona a mensagem do usuário ao chat
+    setState(() {
+      messages.add(ChatMessage(message: text, isUser: true));
+    });
+
+    String mensagem = "Usuário: $text\nIA:";
+
+    // Chama a API com a mensagem
+    var response = await OpenAIService.chamarAPIOpenAI(mensagem);
+
+    // Adiciona a resposta da IA ao chat
+    setState(() {
+      messages.add(ChatMessage(message: response, isUser: false));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Chatbot Apetrus IA')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                var message = messages[index];
+                return Align(
+                  alignment: message.isUser ? Alignment.topRight : Alignment.topLeft,
+                  child: Container(
+                    margin: EdgeInsets.all(8),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: message.isUser ? Colors.blue[100] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(message.message),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: messageController,
+              decoration: InputDecoration(
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: () {
+                    sendMessage(messageController.text);
+                    messageController.clear();
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ChatMessage {
+  String message;
+  bool isUser;
+
+  ChatMessage({required this.message, required this.isUser});
 }
